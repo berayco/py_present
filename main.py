@@ -1,3 +1,5 @@
+import streamlit as st
+
 # S-box ve P-box tanımlamaları
 SBOX = [0xC, 0x5, 0x6, 0xB, 0x9, 0x0, 0xA, 0xD, 0x3, 0xE, 0xF, 0x8, 0x4, 0x7, 0x1, 0x2]
 PBOX = [0, 16, 32, 48, 1, 17, 33, 49, 2, 18, 34, 50, 3, 19, 35, 51, 4, 20, 36, 52, 5, 21, 37, 53, 6, 22, 38, 54, 7, 23, 39, 55, 8, 24, 40, 56, 9, 25, 41, 57, 10, 26, 42, 58, 11, 27, 43, 59, 12, 28, 44, 60, 13, 29, 45, 61, 14, 30, 46, 62, 15, 31, 47, 63]
@@ -37,30 +39,40 @@ def present_decrypt(ciphertext, master_key):
     keys = key_schedule(master_key)
     state = ciphertext
     for i in range(31, 0, -1):
-        state = sbox_layer(state ^ keys[i], [SBOX.index(x) for x in range(16)])
         state = pbox_layer(state, [PBOX.index(x) for x in range(64)])
+        state = sbox_layer(state ^ keys[i], [SBOX.index(x) for x in range(16)])
     return state ^ keys[0]
 
-# Streamlit arayüzü
-import streamlit as st
+def present_page(operation):
+    st.header(f'PRESENT {operation.capitalize()}')
+    input_text = st.text_input(f'{operation.capitalize()} için Metin (Hex):')
+    key = st.text_input('Anahtar (Hex):')
+    output_text_area = st.empty()
+
+    if st.button(f'{operation.capitalize()}'):
+        if input_text and key and all(c in '0123456789abcdefABCDEF' for c in input_text + key):
+            try:
+                input_val = int(input_text, 16)
+                key_val = int(key, 16)
+                if operation == 'şifrele':
+                    output = present_encrypt(input_val, key_val)
+                else:
+                    output = present_decrypt(input_val, key_val)
+                output_text_area.text_area(f'{operation.capitalize()} Sonucu:', f'{output:016x}', height=100)
+            except Exception as e:
+                output_text_area.text_area(f'Hata:', f'Bir hata oluştu: {e}', height=100)
+        else:
+            output_text_area.text_area(f'Hata:', 'Lütfen geçerli bir metin ve anahtar girin (hex formatında).', height=100)
 
 def main():
     st.title('PRESENT Şifreleme Algoritması')
 
-    plaintext = st.text_input('Düz Metin (hex):')
-    key = st.text_input('Anahtar (hex):')
-
-    if st.button('Şifrele'):
-        pt = int(plaintext, 16)
-        k = int(key, 16)
-        ct = present_encrypt(pt, k)
-        st.write(f'Şifreli Metin: {ct:016x}')
-
-    if st.button('Şifre Çöz'):
-        ct = int(plaintext, 16)
-        k = int(key, 16)
-        pt = present_decrypt(ct, k)
-        st.write(f'Çözülmüş Metin: {pt:016x}')
+    page = st.sidebar.selectbox("Seçim Yapınız", ["Şifreleme", "Şifre Çözme"])
+    if page == "Şifreleme":
+        present_page('şifrele')
+    else:
+        present_page('şifre çöz')
 
 if __name__ == '__main__':
     main()
+
