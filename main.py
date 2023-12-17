@@ -31,7 +31,7 @@ def permute(state, pbox):
 
 def encrypt(plaintext, key):
     """ Şifreleme işlevi """
-    round_keys = key_schedule(key, len(bin(key)) - 2)
+    round_keys = key_schedule(key, 80)
     state = plaintext
     for round_key in round_keys:
         state ^= round_key
@@ -41,7 +41,7 @@ def encrypt(plaintext, key):
 
 def decrypt(ciphertext, key):
     """ Şifre çözme işlevi """
-    round_keys = key_schedule(key, len(bin(key)) - 2)
+    round_keys = key_schedule(key, 80)
     state = ciphertext
     for round_key in reversed(round_keys):
         state = permute(state, INVERSE_PBOX)
@@ -61,23 +61,32 @@ INVERSE_PBOX = [PBOX.index(x) for x in range(64)]
 # Streamlit Arayüzü
 st.title("PRESENT Şifreleme ve Şifre Çözme Algoritması")
 
-# Kullanıcı girdileri
-key_input = st.text_input("Anahtar (hexadecimal)", "00000000000000000001")
-plaintext_input = st.text_input("Düz Metin (hexadecimal)", "0000000000000001")
+# Şifreleme Bölümü
+st.header("Şifreleme")
+key_input = st.text_input("Anahtar (hexadecimal) - Şifreleme", "00000000000000000001")
+plaintext_input = st.text_input("Düz Metin (hexadecimal) - Şifreleme", "0000000000000001")
 
-# Girdileri integer'a çevir
-key = int(key_input, 16)
-plaintext = int(plaintext_input, 16)
+try:
+    key = int(key_input, 16)
+    plaintext = int(plaintext_input, 16)
+    if st.button("Şifrele"):
+        ciphertext = encrypt(plaintext, key)
+        st.text_area("Şifreli Metin", f"{ciphertext:016x}", height=100)
+except ValueError:
+    st.error("Lütfen geçerli bir hexadecimal değer giriniz.")
 
-if st.button("Şifrele"):
-    ciphertext = encrypt(plaintext, key)
-    st.write(f"Şifreli Metin: {ciphertext:016x}")
+# Şifre Çözme Bölümü
+st.header("Şifre Çözme")
+key_input_decrypt = st.text_input("Anahtar (hexadecimal) - Şifre Çözme", "00000000000000000001")
+ciphertext_input = st.text_input("Şifreli Metin (hexadecimal) - Şifre Çözme")
 
-if st.button("Şifre Çöz"):
-    ciphertext_input = st.text_input("Şifreli Metin (hexadecimal)")
-    if ciphertext_input:
-        ciphertext = int(ciphertext_input, 16)
-        decrypted_text = decrypt(ciphertext, key)
-        st.write(f"Çözülmüş Metin: {decrypted_text:016x}")
+try:
+    key_decrypt = int(key_input_decrypt, 16)
+    ciphertext = int(ciphertext_input, 16)
+    if st.button("Şifre Çöz"):
+        decrypted_text = decrypt(ciphertext, key_decrypt)
+        st.text_area("Çözülmüş Metin", f"{decrypted_text:016x}", height=100)
+except ValueError:
+    st.error("Lütfen geçerli bir hexadecimal değer giriniz.")
 
 # Uygulamayı çalıştırmak için terminalde 'streamlit run [dosya_adı].py' komutunu kullanın.
